@@ -124,6 +124,37 @@ detect_service_manager() {
     fi
 }
 
+stop_existing_service() {
+    print_section "停止旧版 OmnXT Node"
+
+    local stopped=false
+    if [[ "${SERVICE_MANAGER}" == "systemd" ]]; then
+        if systemctl list-unit-files omnxt-node.service >/dev/null 2>&1; then
+            systemctl stop omnxt-node 2>/dev/null || true
+            stopped=true
+        fi
+    elif [[ "${SERVICE_MANAGER}" == "openrc" ]]; then
+        if [[ -f "${OPENRC_SERVICE}" ]]; then
+            rc-service omnxt stop 2>/dev/null || true
+            stopped=true
+        fi
+    fi
+
+    if pgrep -x omnxt-node >/dev/null 2>&1; then
+        warn "检测到仍有 omnxt-node 进程，尝试结束"
+        pkill -TERM -x omnxt-node 2>/dev/null || true
+        sleep 2
+        pkill -KILL -x omnxt-node 2>/dev/null || true
+        stopped=true
+    fi
+
+    if ${stopped}; then
+        info "旧版 OmnXT Node 已停止"
+    else
+        info "未检测到正在运行的旧版 OmnXT Node"
+    fi
+}
+
 # ============ 解析参数 ============
 INSTALL_BETA=false
 INSTALL_VERSION=""
@@ -187,7 +218,7 @@ download_file() {
     esac
 
     if command -v curl >/dev/null 2>&1; then
-        curl -fsSL --connect-timeout 30 --retry 3 -o "${out}" "${url}"
+        curl -fsSL --connect-timeout 30 --retry 3 -H "Cache-Control: no-cache" -o "${out}" "${url}"
     elif command -v wget >/dev/null 2>&1; then
         wget -q --timeout=30 --tries=3 -O "${out}" "${url}"
     else
@@ -347,6 +378,7 @@ resolve_version() {
 download_and_extract() {
     print_section "下载 OmnXT v${INSTALL_VERSION}"
     local tarball="/tmp/omnxt-node.tar.gz"
+    rm -f "${tarball}"
 
     # 尝试多种 URL 模式
     local urls=(
@@ -374,8 +406,10 @@ download_and_extract() {
         exit 1
     fi
 
-    # 解压安装
+    # 解压安装。保留 /etc/omnxt、/var/lib/omnxt、/var/log/omnxt，只覆盖二进制。
     mkdir -p "${INSTALL_DIR}"
+    rm -f "${INSTALL_DIR}/omnxt-node" "${INSTALL_DIR}/omncli"
+    find "${INSTALL_DIR}" -mindepth 1 -maxdepth 1 -type d -name 'omnxt-node-*' -exec rm -rf {} +
     tar -xzf "${tarball}" -C "${INSTALL_DIR}" --strip-components=0 2>/dev/null \
         || tar -xzf "${tarball}" -C "${INSTALL_DIR}" 2>/dev/null
     rm -f "${tarball}"
@@ -783,6 +817,7 @@ main() {
         echo -e "  渠道:     ${green}latest${plain}"
     fi
 
+    stop_existing_service
     install_dependencies
     install_lego
     install_acme
