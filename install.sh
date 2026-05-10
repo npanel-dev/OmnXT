@@ -305,12 +305,33 @@ download_and_extract() {
     rm -f "${tarball}"
 
     # 确保二进制可执行
-    chmod +x "${INSTALL_DIR}/omnxt-node" 2>/dev/null || true
-    chmod +x "${INSTALL_DIR}/omncli"     2>/dev/null || true
+    local node_bin="${INSTALL_DIR}/omnxt-node"
+    local cli_bin="${INSTALL_DIR}/omncli"
+    if [[ ! -x "${node_bin}" ]]; then
+        node_bin=$(find "${INSTALL_DIR}" -maxdepth 3 -type f -name omnxt-node -perm -111 | head -1 || true)
+    fi
+    if [[ ! -x "${cli_bin}" ]]; then
+        cli_bin=$(find "${INSTALL_DIR}" -maxdepth 3 -type f -name omncli -perm -111 | head -1 || true)
+    fi
+    if [[ -z "${node_bin}" || ! -f "${node_bin}" ]]; then
+        error "安装包中未找到 omnxt-node 可执行文件"
+        error "请检查 Release 包结构或手动查看: find ${INSTALL_DIR} -maxdepth 3 -type f"
+        exit 1
+    fi
+    chmod +x "${node_bin}" 2>/dev/null || true
+    [[ -n "${cli_bin}" && -f "${cli_bin}" ]] && chmod +x "${cli_bin}" 2>/dev/null || true
+
+    # Release 包可能带顶层目录。统一创建稳定入口，systemd/OpenRC 固定使用这里。
+    if [[ "${node_bin}" != "${INSTALL_DIR}/omnxt-node" ]]; then
+        ln -sf "${node_bin}" "${INSTALL_DIR}/omnxt-node"
+    fi
+    if [[ -n "${cli_bin}" && -f "${cli_bin}" && "${cli_bin}" != "${INSTALL_DIR}/omncli" ]]; then
+        ln -sf "${cli_bin}" "${INSTALL_DIR}/omncli"
+    fi
 
     # 创建符号链接
     ln -sf "${INSTALL_DIR}/omnxt-node" "${BIN_LINK}"
-    if [[ -f "${INSTALL_DIR}/omncli" ]]; then
+    if [[ -e "${INSTALL_DIR}/omncli" ]]; then
         ln -sf "${INSTALL_DIR}/omncli" "${CLI_LINK}"
     fi
 
