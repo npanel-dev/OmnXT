@@ -48,6 +48,21 @@ info()  { echo -e "${green}[INFO]${plain}  $*"; }
 warn()  { echo -e "${yellow}[WARN]${plain}  $*"; }
 error() { echo -e "${red}[ERROR]${plain} $*"; }
 
+prompt_read() {
+    local prompt="$1"
+    local var_name="$2"
+    local value=""
+
+    if [[ ! -r /dev/tty ]]; then
+        error "当前安装方式没有可交互终端，无法读取输入"
+        error "请改用非交互参数，例如: bash -s -- v1.0.0 --panel-type=ppanel --panel-url=https://panel.example.com --server-id=7 --secret-key=xxx"
+        return 1
+    fi
+
+    read -r -p "${prompt}" value < /dev/tty || value=""
+    printf -v "${var_name}" '%s' "${value}"
+}
+
 # ============ 前置检查 ============
 [[ $EUID -ne 0 ]] && error "必须使用 root 用户运行此脚本" && exit 1
 
@@ -330,7 +345,7 @@ generate_config() {
         echo "  4) sspanel    (SSPanel-UIM)"
         echo "  5) standalone (独立模式，无面板)"
         echo ""
-        read -rp "请输入选项 [1-5，默认 5]: " panel_choice
+        prompt_read "请输入选项 [1-5，默认 5]: " panel_choice
         case "${panel_choice}" in
             1) PANEL_TYPE="ppanel" ;;
             2) PANEL_TYPE="v2board" ;;
@@ -345,9 +360,9 @@ generate_config() {
     fi
 
     if [[ "${PANEL_TYPE}" != "standalone" ]]; then
-        [[ -z "${PANEL_API_HOST}" ]] && read -rp "面板地址 (如 https://panel.example.com): " PANEL_API_HOST
-        [[ -z "${PANEL_SERVER_ID}" ]] && read -rp "节点 ID: " PANEL_SERVER_ID
-        [[ -z "${PANEL_SECRET_KEY}" ]] && read -rp "通信密钥: " PANEL_SECRET_KEY
+        [[ -z "${PANEL_API_HOST}" ]] && prompt_read "面板地址 (如 https://panel.example.com): " PANEL_API_HOST
+        [[ -z "${PANEL_SERVER_ID}" ]] && prompt_read "节点 ID: " PANEL_SERVER_ID
+        [[ -z "${PANEL_SECRET_KEY}" ]] && prompt_read "通信密钥: " PANEL_SECRET_KEY
     fi
 
     # 生成 hostname 作为 instance_id
@@ -590,7 +605,7 @@ uninstall() {
     info "二进制文件已删除"
 
     echo ""
-    read -rp "是否同时删除配置和数据? [y/N]: " del_data
+    prompt_read "是否同时删除配置和数据? [y/N]: " del_data
     if [[ "${del_data}" =~ ^[Yy]$ ]]; then
         rm -rf "${CONFIG_DIR}" "${STATE_DIR}" "${LOG_DIR}"
         info "配置和数据已清除"

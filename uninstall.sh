@@ -27,6 +27,21 @@ info() { echo -e "${green}[INFO]${plain}  $*"; }
 warn() { echo -e "${yellow}[WARN]${plain}  $*"; }
 error() { echo -e "${red}[ERROR]${plain} $*"; }
 
+prompt_read() {
+    local prompt="$1"
+    local var_name="$2"
+    local value=""
+
+    if [[ ! -r /dev/tty ]]; then
+        warn "当前卸载方式没有可交互终端，默认保留配置、数据和日志；如需清理请传 --purge -y"
+        printf -v "${var_name}" '%s' ""
+        return 0
+    fi
+
+    read -r -p "${prompt}" value < /dev/tty || value=""
+    printf -v "${var_name}" '%s' "${value}"
+}
+
 [[ "${EUID}" -ne 0 ]] && error "必须使用 root 用户运行此脚本" && exit 1
 
 PURGE=false
@@ -72,7 +87,7 @@ info "已删除二进制和服务文件"
 if ! ${PURGE}; then
     if ! ${ASSUME_YES}; then
         echo ""
-        read -r -p "是否同时删除配置、数据和日志? [y/N]: " answer
+        prompt_read "是否同时删除配置、数据和日志? [y/N]: " answer
         case "${answer}" in
             y|Y|yes|YES) PURGE=true ;;
         esac
