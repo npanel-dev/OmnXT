@@ -12,6 +12,7 @@ STATE_DIR="/var/lib/omnxt"
 LOG_DIR="/var/log/omnxt"
 BIN_LINK="/usr/local/bin/omnxt-node"
 CLI_LINK="/usr/local/bin/omncli"
+CLI_REAL_LINK="/usr/local/bin/omncli-real"
 SYSTEMD_SERVICE="/etc/systemd/system/omnxt-node.service"
 OPENRC_SERVICE="/etc/init.d/omnxt"
 OPENRC_RUNLEVEL="default"
@@ -80,7 +81,7 @@ if [[ -f "${OPENRC_SERVICE}" ]]; then
     rm -f "${OPENRC_SERVICE}"
 fi
 
-rm -f "${BIN_LINK}" "${CLI_LINK}"
+rm -f "${BIN_LINK}" "${CLI_LINK}" "${CLI_REAL_LINK}"
 rm -rf "${INSTALL_DIR}"
 info "已删除二进制和服务文件"
 
