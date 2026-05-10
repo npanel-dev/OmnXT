@@ -23,6 +23,7 @@ STATE_DIR="/var/lib/omnxt"
 LOG_DIR="/var/log/omnxt"
 BIN_LINK="/usr/local/bin/omnxt-node"
 CLI_LINK="/usr/local/bin/omncli"
+CLI_REAL_LINK="/usr/local/bin/omncli-real"
 SYSTEMD_DIR="/etc/systemd/system"
 OPENRC_SERVICE="/etc/init.d/omnxt"
 OPENRC_RUNLEVEL="default"
@@ -128,6 +129,7 @@ PANEL_TYPE=""
 PANEL_API_HOST=""
 PANEL_SERVER_ID=""
 PANEL_SECRET_KEY=""
+PANEL_PROTOCOL=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -149,6 +151,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --secret-key=*)
             PANEL_SECRET_KEY="${1#*=}"
+            shift
+            ;;
+        --protocol=*)
+            PANEL_PROTOCOL="${1#*=}"
             shift
             ;;
         --repo=*)
@@ -332,7 +338,12 @@ download_and_extract() {
     # 创建符号链接
     ln -sf "${INSTALL_DIR}/omnxt-node" "${BIN_LINK}"
     if [[ -e "${INSTALL_DIR}/omncli" ]]; then
-        ln -sf "${INSTALL_DIR}/omncli" "${CLI_LINK}"
+        ln -sf "${INSTALL_DIR}/omncli" "${CLI_REAL_LINK}"
+        cat > "${CLI_LINK}" <<EOF
+#!/usr/bin/env bash
+exec "${INSTALL_DIR}/omncli" --bootstrap "${CONFIG_DIR}/bootstrap.toml" "\$@"
+EOF
+        chmod 755 "${CLI_LINK}"
     fi
 
     info "二进制文件安装到 ${INSTALL_DIR}"
@@ -384,6 +395,24 @@ generate_config() {
         [[ -z "${PANEL_API_HOST}" ]] && prompt_read "面板地址 (如 https://panel.example.com): " PANEL_API_HOST
         [[ -z "${PANEL_SERVER_ID}" ]] && prompt_read "节点 ID: " PANEL_SERVER_ID
         [[ -z "${PANEL_SECRET_KEY}" ]] && prompt_read "通信密钥: " PANEL_SECRET_KEY
+        if [[ "${PANEL_TYPE}" == "ppanel" && -z "${PANEL_PROTOCOL}" ]]; then
+            echo ""
+            echo -e "${cyan}请选择 PPanel/NPanel 节点协议:${plain}"
+            echo "  1) simnet"
+            echo "  2) shadowsocks"
+            echo "  3) trojan"
+            echo "  4) vmess"
+            echo "  5) vless"
+            echo ""
+            prompt_read "请输入选项 [1-5，默认 1]: " protocol_choice
+            case "${protocol_choice}" in
+                2) PANEL_PROTOCOL="shadowsocks" ;;
+                3) PANEL_PROTOCOL="trojan" ;;
+                4) PANEL_PROTOCOL="vmess" ;;
+                5) PANEL_PROTOCOL="vless" ;;
+                *) PANEL_PROTOCOL="simnet" ;;
+            esac
+        fi
     fi
 
     # 生成 hostname 作为 instance_id
@@ -413,6 +442,7 @@ EOF
 metadata.ppanel_api_host = "${PANEL_API_HOST}"
 metadata.ppanel_server_id = "${PANEL_SERVER_ID}"
 metadata.ppanel_secret_key = "${PANEL_SECRET_KEY}"
+metadata.ppanel_protocol = "${PANEL_PROTOCOL:-simnet}"
 EOF
             ;;
         v2board|xboard)
@@ -587,7 +617,8 @@ print_post_install() {
         echo -e "${cyan}========== CLI 管理 ==========${plain}"
         echo "  omncli status                  查看节点状态"
         echo "  omncli panel show              查看面板配置"
-        echo "  omncli validate                验证配置"
+        echo "  omncli config lint             验证配置"
+        echo "  omncli control status          查看面板同步/上报"
     fi
 
     echo ""
@@ -621,7 +652,7 @@ uninstall() {
         rm -f "${OPENRC_SERVICE}"
     fi
 
-    rm -f "${BIN_LINK}" "${CLI_LINK}"
+    rm -f "${BIN_LINK}" "${CLI_LINK}" "${CLI_REAL_LINK}"
     rm -rf "${INSTALL_DIR}"
     info "二进制文件已删除"
 
