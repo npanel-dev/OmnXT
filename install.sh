@@ -31,6 +31,7 @@ OPENRC_RUNLEVEL="default"
 
 # ============ 仓库配置 ============
 GITHUB_REPO="${OMNXT_GITHUB_REPO:-npanel-dev/OmnXT}"
+LEGO_VERSION="${OMNXT_LEGO_VERSION:-v4.25.2}"
 SERVICE_MANAGER=""
 
 # ============ UI 函数 ============
@@ -218,6 +219,70 @@ install_dependencies() {
             warn "未知系统，跳过依赖安装，请确保已安装 curl/wget/tar"
             ;;
     esac
+}
+
+# ============ 安装 lego ============
+install_lego() {
+    print_section "安装 lego（用于 HTTP/DNS 自动 TLS 证书）"
+
+    if command -v lego >/dev/null 2>&1; then
+        info "lego 已安装: $(command -v lego)"
+        return 0
+    fi
+
+    local installed=false
+    case "${OS}" in
+        debian|ubuntu)
+            apt-get update -qq -o Acquire::ForceIPv4=true >/dev/null 2>&1 || true
+            if apt-get install -qq -y -o Acquire::ForceIPv4=true lego >/dev/null 2>&1; then
+                installed=true
+            fi
+            ;;
+        alpine)
+            if apk add --no-cache lego >/dev/null 2>&1; then
+                installed=true
+            fi
+            ;;
+        centos)
+            if yum install -y lego >/dev/null 2>&1; then
+                installed=true
+            fi
+            ;;
+    esac
+
+    if ${installed} && command -v lego >/dev/null 2>&1; then
+        info "lego 安装成功: $(command -v lego)"
+        return 0
+    fi
+
+    local lego_arch=""
+    case "${ARCH}" in
+        x86_64)  lego_arch="amd64" ;;
+        aarch64) lego_arch="arm64" ;;
+        *)
+            warn "当前架构不支持自动下载 lego: ${ARCH}"
+            return 0
+            ;;
+    esac
+
+    local tmp_dir="/tmp/omnxt-lego-install"
+    local tarball="${tmp_dir}/lego.tar.gz"
+    local url="https://github.com/go-acme/lego/releases/download/${LEGO_VERSION}/lego_${LEGO_VERSION}_linux_${lego_arch}.tar.gz"
+
+    mkdir -p "${tmp_dir}"
+    info "尝试下载 lego: ${url}"
+    if download_file "${url}" "${tarball}" 2>/dev/null && tar -xzf "${tarball}" -C "${tmp_dir}" lego 2>/dev/null; then
+        install -m 0755 "${tmp_dir}/lego" /usr/local/bin/lego
+        rm -rf "${tmp_dir}"
+        if command -v lego >/dev/null 2>&1; then
+            info "lego 安装成功: $(command -v lego)"
+            return 0
+        fi
+    fi
+
+    rm -rf "${tmp_dir}"
+    warn "lego 安装失败（不影响 OmnXT 启动，但 cert_mode=http/dns 无法自动申请证书）"
+    warn "可手动安装后重启: https://github.com/go-acme/lego/releases"
 }
 
 # ============ 安装 acme.sh ============
@@ -719,6 +784,7 @@ main() {
     fi
 
     install_dependencies
+    install_lego
     install_acme
     resolve_version
     download_and_extract
