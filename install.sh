@@ -5,6 +5,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/npanel-dev/OmnXT/main/install.sh | sudo bash -s -- --beta
 #   curl -fsSL https://raw.githubusercontent.com/npanel-dev/OmnXT/main/install.sh | sudo bash -s -- 0.1.0
 #   curl -fsSL https://raw.githubusercontent.com/npanel-dev/OmnXT/main/install.sh | sudo bash -s -- --repo=npanel-dev/OmnXT
+#   curl -fsSL https://raw.githubusercontent.com/npanel-dev/OmnXT/main/install.sh | bash -s -- v1.0.0 --panel-type=ppanel --panel-url=https://api.example.com --server-id=3 --secret-key=xxx --protocol=simnet
 
 set -euo pipefail
 
@@ -156,6 +157,10 @@ while [[ $# -gt 0 ]]; do
         --protocol=*)
             PANEL_PROTOCOL="${1#*=}"
             shift
+            ;;
+        --protocol)
+            PANEL_PROTOCOL="${2:-}"
+            shift 2
             ;;
         --repo=*)
             GITHUB_REPO="${1#*=}"
@@ -341,7 +346,12 @@ download_and_extract() {
         ln -sf "${INSTALL_DIR}/omncli" "${CLI_REAL_LINK}"
         cat > "${CLI_LINK}" <<EOF
 #!/usr/bin/env bash
-exec "${INSTALL_DIR}/omncli" --bootstrap "${CONFIG_DIR}/bootstrap.toml" "\$@"
+for arg in "\$@"; do
+    if [[ "\${arg}" == "--bootstrap" ]]; then
+        exec "${INSTALL_DIR}/omncli" "\$@"
+    fi
+done
+exec "${INSTALL_DIR}/omncli" "\$@" --bootstrap "${CONFIG_DIR}/bootstrap.toml"
 EOF
         chmod 755 "${CLI_LINK}"
     fi
@@ -362,6 +372,16 @@ generate_config() {
 
     if [[ -f "${bootstrap}" ]]; then
         info "配置文件已存在，保留现有配置: ${bootstrap}"
+        if grep -q '^panel_type = "ppanel"' "${bootstrap}" \
+            && ! grep -q '^metadata\.ppanel_protocol[[:space:]]*=' "${bootstrap}"; then
+            local existing_protocol="${PANEL_PROTOCOL:-simnet}"
+            cat >> "${bootstrap}" <<EOF
+
+# PPanel/NPanel 节点协议
+metadata.ppanel_protocol = "${existing_protocol}"
+EOF
+            info "已补充 PPanel/NPanel 协议字段: metadata.ppanel_protocol = \"${existing_protocol}\""
+        fi
         return 0
     fi
 
