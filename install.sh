@@ -339,27 +339,27 @@ resolve_version() {
         local releases
         releases=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases")
         local tag=""
-        local current=""
         while IFS= read -r line; do
             if echo "${line}" | grep -q '"tag_name"'; then
-                current=$(echo "${line}" | sed 's/.*"tag_name": "//;s/".*//')
+                tag=$(echo "${line}" | sed 's/.*"tag_name": "//;s/".*//')
             fi
             if echo "${line}" | grep -q '"prerelease": true'; then
-                if [[ -n "${current}" ]]; then
-                    tag="${current}"
+                if [[ -n "${tag}" ]]; then
+                    INSTALL_VERSION="${tag#v}"
+                    info "最新 beta: v${INSTALL_VERSION}"
+                    return 0
+                fi
+            fi
+            # GitHub API 按时间倒序返回，遇到正式版说明没有更新的 beta
+            if echo "${line}" | grep -q '"prerelease": false'; then
+                if [[ -n "${tag}" ]]; then
+                    # 当前 tag 是 beta 之后的第一个正式版，tag 中保存的是上一个版本（可能是 beta）
                     break
                 fi
             fi
-            if echo "${line}" | grep -q '"prerelease": false'; then
-                current=""
-            fi
         done <<< "${releases}"
-        if [[ -z "${tag}" ]]; then
-            error "未找到 beta 版本"
-            exit 1
-        fi
-        INSTALL_VERSION="${tag#v}"
-        info "最新 beta: v${INSTALL_VERSION}"
+        error "未找到 beta 版本"
+        exit 1
     elif [[ -z "${INSTALL_VERSION}" ]]; then
         info "查询最新正式版..."
         local tag
@@ -805,23 +805,23 @@ main() {
     detect_arch
     detect_service_manager
 
+    # 提前检测版本，确保显示正确的版本信息
+    resolve_version
+
     echo -e "  系统:     ${green}${OS}${plain}"
     echo -e "  架构:     ${green}${ARCH}${plain}"
     echo -e "  Target:   ${green}${RUST_TARGET}${plain}"
     echo -e "  服务管理: ${green}${SERVICE_MANAGER}${plain}"
     if ${INSTALL_BETA}; then
-        echo -e "  渠道:     ${yellow}beta${plain}"
-    elif [[ -n "${INSTALL_VERSION}" ]]; then
-        echo -e "  版本:     ${green}v${INSTALL_VERSION}${plain}"
+        echo -e "  版本:     ${yellow}v${INSTALL_VERSION} (beta)${plain}"
     else
-        echo -e "  渠道:     ${green}latest${plain}"
+        echo -e "  版本:     ${green}v${INSTALL_VERSION}${plain}"
     fi
 
     stop_existing_service
     install_dependencies
     install_lego
     install_acme
-    resolve_version
     download_and_extract
     setup_directories
     generate_config
