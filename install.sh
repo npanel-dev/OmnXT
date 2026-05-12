@@ -471,6 +471,28 @@ generate_config() {
 
     if [[ -f "${bootstrap}" ]]; then
         info "配置文件已存在，保留现有配置: ${bootstrap}"
+        if ! grep -q '^metadata\.listener_accept_mode[[:space:]]*=' "${bootstrap}"; then
+            cat >> "${bootstrap}" <<EOF
+
+# OmnXT Node 监听模式
+metadata.listener_accept_mode = "real_once"
+EOF
+            info "已补充真实 TCP/TLS 监听模式: metadata.listener_accept_mode = \"real_once\""
+        fi
+        if ! grep -q '^metadata\.node_run_mode[[:space:]]*=' "${bootstrap}"; then
+            cat >> "${bootstrap}" <<EOF
+
+# OmnXT Node 服务运行模式
+metadata.node_run_mode = "service"
+EOF
+            info "已补充服务运行模式: metadata.node_run_mode = \"service\""
+        fi
+        if ! grep -q '^metadata\.service_tick_interval_ms[[:space:]]*=' "${bootstrap}"; then
+            cat >> "${bootstrap}" <<EOF
+metadata.service_tick_interval_ms = "100"
+EOF
+            info "已补充服务 tick 间隔: metadata.service_tick_interval_ms = \"100\""
+        fi
         if grep -q '^panel_type = "ppanel"' "${bootstrap}" \
             && ! grep -q '^metadata\.ppanel_protocol[[:space:]]*=' "${bootstrap}"; then
             local existing_protocol="${PANEL_PROTOCOL:-simnet}"
@@ -607,7 +629,7 @@ Type=simple
 Environment=OMNXT_NODE_LOG_FILE=${LOG_DIR}/omnxt-node.log
 Environment=OMNXT_LOG_MAX_BYTES=2097152
 Environment=OMNXT_LOG_MAX_BACKUPS=3
-ExecStart=${INSTALL_DIR}/omnxt-node --bootstrap ${CONFIG_DIR}/bootstrap.toml
+ExecStart=${INSTALL_DIR}/omnxt-node --bootstrap ${CONFIG_DIR}/bootstrap.toml --service
 WorkingDirectory=${INSTALL_DIR}
 Restart=on-failure
 RestartSec=5
@@ -627,7 +649,7 @@ name="OmnXT Node"
 description="OmnXT Node Service"
 
 command="/usr/local/omnxt/omnxt-node"
-command_args="--bootstrap /etc/omnxt/bootstrap.toml"
+command_args="--bootstrap /etc/omnxt/bootstrap.toml --service"
 pidfile="/run/omnxt.pid"
 directory="/usr/local/omnxt"
 export OMNXT_NODE_LOG_FILE="/var/log/omnxt/omnxt-node.log"
