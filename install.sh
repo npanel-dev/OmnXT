@@ -33,6 +33,7 @@ OPENRC_RUNLEVEL="default"
 GITHUB_REPO="${OMNXT_GITHUB_REPO:-npanel-dev/OmnXT}"
 LEGO_VERSION="${OMNXT_LEGO_VERSION:-v4.25.2}"
 SERVICE_MANAGER=""
+MIN_INSTALL_FREE_KB="${OMNXT_INSTALL_MIN_FREE_KB:-2097152}"
 
 # ============ UI 函数 ============
 print_banner() {
@@ -122,6 +123,33 @@ detect_service_manager() {
         error "未检测到可用的服务管理器（systemd / OpenRC）"
         exit 1
     fi
+}
+
+check_disk_space() {
+    print_section "检查磁盘空间"
+
+    local probe_path="/"
+    if [[ -d "${STATE_DIR}" ]]; then
+        probe_path="${STATE_DIR}"
+    elif [[ -d "$(dirname "${STATE_DIR}")" ]]; then
+        probe_path="$(dirname "${STATE_DIR}")"
+    fi
+
+    local available_kb
+    available_kb=$(df -Pk "${probe_path}" 2>/dev/null | awk 'NR == 2 { print $4 }')
+    if [[ ! "${available_kb}" =~ ^[0-9]+$ ]]; then
+        error "无法读取 ${probe_path} 的可用磁盘空间"
+        return 1
+    fi
+    if (( available_kb < MIN_INSTALL_FREE_KB )); then
+        error "可用磁盘空间不足，安装前至少需要 $((MIN_INSTALL_FREE_KB / 1024)) MiB"
+        error "当前仅剩 $((available_kb / 1024)) MiB；服务尚未停止"
+        if [[ -e "${STATE_DIR}/state.db" ]]; then
+            ls -lh "${STATE_DIR}/state.db"* 2>/dev/null || true
+        fi
+        return 1
+    fi
+    info "磁盘空间检查通过: $((available_kb / 1024)) MiB 可用"
 }
 
 stop_existing_service() {
@@ -623,16 +651,22 @@ write_systemd_service() {
 Description=OmnXT Node Service
 Documentation=https://github.com/${GITHUB_REPO}
 After=network.target nss-lookup.target
+StartLimitIntervalSec=60
+StartLimitBurst=5
 
 [Service]
 Type=simple
 Environment=OMNXT_NODE_LOG_FILE=${LOG_DIR}/omnxt-node.log
-Environment=OMNXT_LOG_MAX_BYTES=2097152
-Environment=OMNXT_LOG_MAX_BACKUPS=3
+Environment=OMNXT_LOG_MAX_BYTES=33554432
+Environment=OMNXT_LOG_MAX_BACKUPS=7
+Environment=OMNXT_STATE_MIN_FREE_BYTES=2147483648
+Environment=OMNXT_STATE_MIN_FREE_PERCENT=10
 ExecStart=${INSTALL_DIR}/omnxt-node --bootstrap ${CONFIG_DIR}/bootstrap.toml --service
 WorkingDirectory=${INSTALL_DIR}
 Restart=on-failure
 RestartSec=5
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=2000
 LimitNOFILE=1048576
 
 [Install]
@@ -653,8 +687,10 @@ command_args="--bootstrap /etc/omnxt/bootstrap.toml --service"
 pidfile="/run/omnxt.pid"
 directory="/usr/local/omnxt"
 export OMNXT_NODE_LOG_FILE="/var/log/omnxt/omnxt-node.log"
-export OMNXT_LOG_MAX_BYTES="2097152"
-export OMNXT_LOG_MAX_BACKUPS="3"
+export OMNXT_LOG_MAX_BYTES="33554432"
+export OMNXT_LOG_MAX_BACKUPS="7"
+export OMNXT_STATE_MIN_FREE_BYTES="2147483648"
+export OMNXT_STATE_MIN_FREE_PERCENT="10"
 
 depend() {
     need net
@@ -840,10 +876,11 @@ main() {
         echo -e "  版本:     ${green}v${INSTALL_VERSION}${plain}"
     fi
 
-    stop_existing_service
+    check_disk_space
     install_dependencies
     install_lego
     install_acme
+    stop_existing_service
     download_and_extract
     setup_directories
     generate_config
