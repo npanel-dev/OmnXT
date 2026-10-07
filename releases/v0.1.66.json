@@ -1,0 +1,166 @@
+{
+  "release_tag": "v0.1.66",
+  "program_version": "0.1.66",
+  "source_repository": "SunGreatSage/OmnXT",
+  "source_branch": "development",
+  "source_commit": "948b54ad450a6a27f02add92dc6f36358661b3f3",
+  "built_at": "2026-10-07T15:34:41Z",
+  "glibc_baseline": "2.28",
+  "build": {
+    "rustc": "rustc 1.94.1 (e408947bf 2026-03-25)\nbinary: rustc\ncommit-hash: e408947bfd200af42db322daf0fadfe7e26d3bd1\ncommit-date: 2026-03-25\nhost: aarch64-apple-darwin\nrelease: 1.94.1\nLLVM version: 21.1.8",
+    "profile": {
+      "opt_level": "z",
+      "lto": true,
+      "codegen_units": 1,
+      "panic": "abort",
+      "strip": "symbols"
+    },
+    "zig_version": "0.14.0",
+    "cargo_zigbuild_version": "0.22.3",
+    "build_flags": [
+      "--release",
+      "--locked",
+      "--offline",
+      "-j4",
+      "default features"
+    ]
+  },
+  "assets": [
+    {
+      "name": "omnxt-node-x86_64-unknown-linux-gnu.tar.gz",
+      "size": 11793931,
+      "sha256": "86fcc2da0d10e51e791e2a109e56354773b2f2540c463e446d3335dbf13641d0",
+      "download_url": "https://github.com/npanel-dev/OmnXT/releases/download/v0.1.66/omnxt-node-x86_64-unknown-linux-gnu.tar.gz"
+    },
+    {
+      "name": "omnxt-node-x86_64-unknown-linux-gnu.tar.gz.sha256",
+      "size": 109,
+      "sha256": "2e87202f3825d77684602762743ea133330aa2f1d16682db93cb9125016089ba",
+      "download_url": "https://github.com/npanel-dev/OmnXT/releases/download/v0.1.66/omnxt-node-x86_64-unknown-linux-gnu.tar.gz.sha256"
+    },
+    {
+      "name": "omnxt-node-aarch64-unknown-linux-gnu.tar.gz",
+      "size": 11051232,
+      "sha256": "7e074614d1ec2bc37f35c93aa22c3290a006b3f6c1924cf8d9f920e9047166c1",
+      "download_url": "https://github.com/npanel-dev/OmnXT/releases/download/v0.1.66/omnxt-node-aarch64-unknown-linux-gnu.tar.gz"
+    },
+    {
+      "name": "omnxt-node-aarch64-unknown-linux-gnu.tar.gz.sha256",
+      "size": 110,
+      "sha256": "06e31d59534b13edd8e08f2789645044bd902bd55f23f3cd4558c5e37fd69d74",
+      "download_url": "https://github.com/npanel-dev/OmnXT/releases/download/v0.1.66/omnxt-node-aarch64-unknown-linux-gnu.tar.gz.sha256"
+    }
+  ],
+  "packages": [
+    {
+      "package": "omnxt-node-x86_64-unknown-linux-gnu",
+      "target": "x86_64-unknown-linux-gnu",
+      "built_at": "2026-10-07T15:34:41Z",
+      "git_commit": "948b54ad450a6a27f02add92dc6f36358661b3f3",
+      "version": "0.1.66",
+      "source_repository": "SunGreatSage/OmnXT",
+      "source_branch": "development",
+      "glibc_baseline": "2.28",
+      "binaries": [
+        {
+          "size": 13032096,
+          "sha256": "13db9f8db8f0af2f9a9fc5574d2b4bda6063322d00673527c12705ccf650033a",
+          "stripped": true,
+          "maximum_required_glibc": "2.28",
+          "needed": [
+            "libm.so.6",
+            "libpthread.so.0",
+            "libc.so.6",
+            "libdl.so.2"
+          ],
+          "package_version": "0.1.66",
+          "path": "bin/omnxt-node",
+          "source_revision_marker": "948b54ad450a"
+        },
+        {
+          "size": 13618720,
+          "sha256": "2f6ae77fda144318f12fc12446ae26a6905d37a37967e167c884045894ba5377",
+          "stripped": true,
+          "maximum_required_glibc": "2.28",
+          "needed": [
+            "libm.so.6",
+            "libpthread.so.0",
+            "libc.so.6",
+            "libdl.so.2"
+          ],
+          "package_version": "0.1.66",
+          "path": "bin/omncli",
+          "source_revision_marker": null
+        }
+      ]
+    },
+    {
+      "package": "omnxt-node-aarch64-unknown-linux-gnu",
+      "target": "aarch64-unknown-linux-gnu",
+      "built_at": "2026-10-07T15:34:41Z",
+      "git_commit": "948b54ad450a6a27f02add92dc6f36358661b3f3",
+      "version": "0.1.66",
+      "source_repository": "SunGreatSage/OmnXT",
+      "source_branch": "development",
+      "glibc_baseline": "2.28",
+      "binaries": [
+        {
+          "size": 10294144,
+          "sha256": "3f4053fdbd1bf23da26483e8025990148f358239d6c8584c66787c542231c6d9",
+          "stripped": true,
+          "maximum_required_glibc": "2.28",
+          "needed": [
+            "libm.so.6",
+            "libpthread.so.0",
+            "libc.so.6",
+            "libdl.so.2",
+            "ld-linux-aarch64.so.1"
+          ],
+          "package_version": "0.1.66",
+          "path": "bin/omnxt-node",
+          "source_revision_marker": "948b54ad450a"
+        },
+        {
+          "size": 10718104,
+          "sha256": "1fb0892ebe3e6d628516c48843b1da21976d1a9e9634580a8ab87b215be0e07d",
+          "stripped": true,
+          "maximum_required_glibc": "2.28",
+          "needed": [
+            "libm.so.6",
+            "libpthread.so.0",
+            "libc.so.6",
+            "libdl.so.2",
+            "ld-linux-aarch64.so.1"
+          ],
+          "package_version": "0.1.66",
+          "path": "bin/omncli",
+          "source_revision_marker": null
+        }
+      ]
+    }
+  ],
+  "validation": {
+    "related_tests_passed": 407,
+    "existing_tests_ignored": 12,
+    "workspace_check": "passed on Linux/arm64 after version sync",
+    "fmt": "passed",
+    "diff_check": "passed",
+    "elf_dynamic_requirements": "passed for both architectures and programs",
+    "smoke": [
+      {
+        "target": "x86_64-unknown-linux-gnu",
+        "result": "SMOKE_PASSED version=0.1.66 source_revision=948b54ad450a fixture=simnet finite_exit=runtime_elapsed",
+        "environment": "Debian 10 glibc 2.28 Docker; network none, isolated loopback, finite service runtime",
+        "fixture_logging": "INFO; max_bytes=256, max_backups=128 to flush short-run diagnostics through bounded rotation"
+      },
+      {
+        "target": "aarch64-unknown-linux-gnu",
+        "result": "SMOKE_PASSED version=0.1.66 source_revision=948b54ad450a fixture=simnet finite_exit=runtime_elapsed",
+        "environment": "Debian 10 glibc 2.28 Docker; network none, isolated loopback, finite service runtime",
+        "fixture_logging": "INFO; max_bytes=256, max_backups=128 to flush short-run diagnostics through bounded rotation"
+      }
+    ],
+    "customer_node_deployment": "not performed",
+    "wan_device_acceptance": "not performed"
+  }
+}
