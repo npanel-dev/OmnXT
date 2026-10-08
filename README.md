@@ -2,9 +2,9 @@
 
 本仓库提供 OmnXT Node 的 Linux 发布包与安装脚本。发布地址为 [npanel-dev/OmnXT Releases](https://github.com/npanel-dev/OmnXT/releases)。
 
-本次版本为 **v0.1.66**，Node 与 CLI 的程序版本均为 `0.1.66`。修复内容、源码版本、验证结果与验收边界见 [发布说明](releases/v0.1.66.md)；产物校验值见 [发布清单](releases/v0.1.66.json)。
+本次版本为 **v0.1.67**，Node 与 CLI 的程序版本均为 `0.1.67`。修复内容、源码版本、验证结果与验收边界见 [发布说明](releases/v0.1.67.md)；产物校验值见 [发布清单](releases/v0.1.67.json)。
 
-本轮 SimNet 修复包含服务端逻辑，需要升级 Node。客户端消费返窗修复还需要应用对应的新 SDK；仅升级 Node 不代表全部客户端改动已生效。
+本轮 SimNet 修复包含 Node 上传回压、信用和生命周期逻辑，需要升级 Node。完整修复还需要客户端应用对应的新 SDK；本次附件交付 Node/CLI，平台 SDK 未重新打包。高 RTT 延迟与客户现场速度仍需复测，详见发布说明。
 
 ## Linux 发布文件
 
@@ -18,7 +18,7 @@ Bin/                             # 最新 Linux 包，其他已有文件保留
   omnxt-node-x86_64-unknown-linux-gnu.tar.gz.sha256
   omnxt-node-aarch64-unknown-linux-gnu.tar.gz
   omnxt-node-aarch64-unknown-linux-gnu.tar.gz.sha256
-dist/v0.1.66/                    # 本地版本归档与两架构解包目录
+dist/v0.1.67/                    # 本地版本归档与两架构解包目录
 ```
 
 压缩包内包含：
@@ -87,7 +87,7 @@ omnxt-node-aarch64-unknown-linux-gnu.tar.gz
 omnxt-node-aarch64-unknown-linux-gnu.tar.gz.sha256
 ```
 
-正式版本使用 tag，例如 `v0.1.66`。`manifest.json` 保存实际 Rust 源码提交，发布清单保存归档与二进制 SHA256。
+正式版本使用 tag，例如 `v0.1.67`。`manifest.json` 保存实际 Rust 源码提交，发布清单保存归档与二进制 SHA256。
 
 ## 一键安装
 
@@ -100,7 +100,7 @@ curl -fsSL https://raw.githubusercontent.com/npanel-dev/OmnXT/main/install.sh | 
 安装指定版本：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/npanel-dev/OmnXT/main/install.sh | sudo bash -s -- 0.1.66
+curl -fsSL https://raw.githubusercontent.com/npanel-dev/OmnXT/main/install.sh | sudo bash -s -- 0.1.67
 ```
 
 安装 beta：
